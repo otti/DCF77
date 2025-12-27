@@ -14,6 +14,9 @@ void DCF77::begin(uint8_t u8Pin, uint8_t FirstEdge)
 }
 
 // Call at least every 15 ms!
+// ATMEGA32U4
+//   - Takes about 10 us
+//   - Takes about 1100 us if decoding has to be done
 void DCF77::loop(void)
 {
     bool Pin = digitalRead(this->_u8Pin);
@@ -35,22 +38,27 @@ void DCF77::loop(void)
             {
                 if (this->_u8BufferPos == 59) // All bits received?
                 {
-                    this->_DbgSerial->println("Start of new minute --> Decode");
+                    if (this->_DbgSerial != nullptr)
+                        this->_DbgSerial->println("Start of new minute --> Decode");
                     this->DecodeTime();
                     this->ResetBuffer(); // rx complete. reset buffer
                     this->DbgPrintTime();
                 }
                 else
                 {
-                    this->_DbgSerial->println("Gap detected but not all bits have been received");
+                    if (this->_DbgSerial != nullptr)
+                        this->_DbgSerial->println("Gap detected but not all bits have been received");
                     this->ResetBuffer();
                 }
             }
             else if ((u32PeriodeTime < 900) || (u32PeriodeTime > 1100)) // Periode time must be 1000 ms
             {
-                this->_DbgSerial->print("Invalid periode time: ");
-                this->_DbgSerial->print(u32PeriodeTime);
-                this->_DbgSerial->println(" ms");
+                if (this->_DbgSerial != nullptr)
+                {
+                    this->_DbgSerial->print("Invalid periode time: ");
+                    this->_DbgSerial->print(u32PeriodeTime);
+                    this->_DbgSerial->println(" ms");
+                }
                 this->ResetBuffer();
             }
         }
@@ -65,9 +73,12 @@ void DCF77::loop(void)
                 this->AddBit(true);
             else // invalid bit length
             {
-                this->_DbgSerial->print("Invalid bit length: ");
-                this->_DbgSerial->print(u32HighTime);
-                this->_DbgSerial->println("ms");
+                if (this->_DbgSerial != nullptr)
+                {
+                    this->_DbgSerial->print("Invalid bit length: ");
+                    this->_DbgSerial->print(u32HighTime);
+                    this->_DbgSerial->println("ms");
+                }
                 this->ResetBuffer();
             }
         }
@@ -89,25 +100,27 @@ bool DCF77::GetInputLevel(void)
 void DCF77::ResetBuffer(void)
 {
     this->_u8BufferPos = 0;
-    this->_DbgSerial->println("  - Reset data buffer");
+    if (this->_DbgSerial != nullptr)
+        this->_DbgSerial->println("  - Reset data buffer");
 }
 
 void DCF77::AddBit(bool bit)
 {
     if (this->_u8BufferPos < DCF77_BUFFER_SIZE)
     {
-        this->_DbgSerial->print("Add bit ");
-        this->_DbgSerial->print(bit);
-        this->_DbgSerial->print(" at index ");
-        this->_DbgSerial->println(this->_u8BufferPos);
-
+        if (this->_DbgSerial != nullptr)
+        {
+            this->_DbgSerial->print("Add bit ");
+            this->_DbgSerial->print(bit);
+            this->_DbgSerial->print(" at index ");
+            this->_DbgSerial->println(this->_u8BufferPos);
+        }
         this->_abBuffer[this->_u8BufferPos] = bit;
         if (this->_u8BufferPos < (DCF77_BUFFER_SIZE - 1))
             this->_u8BufferPos++;
     }
     else
     {
-        this->_DbgSerial->println("Buffer Overflow");
         this->ResetBuffer();
     }
 }
@@ -122,8 +135,11 @@ bool DCF77::CheckParity(value_info_t Element)
             Parity++;
     }
 
-    if (Parity & 0x01)
-        this->_DbgSerial->println(" - Invalid parity");
+    if (this->_DbgSerial != nullptr)
+    {
+        if (Parity & 0x01)
+            this->_DbgSerial->println(" - Invalid parity");
+    }
 
     return (Parity & 0x01) ? false : true;
 }
@@ -213,25 +229,29 @@ void DCF77::DecodeTime(void)
 #endif
 
     this->_nNewValidTimeAvailable = true;
-    this->_DbgSerial->println(" - Decoding successful");
+    if (this->_DbgSerial != nullptr)
+        this->_DbgSerial->println(" - Decoding successful");
 }
 
 void DCF77::DbgPrintTime(void)
 {
     char text[16];
 
-    sprintf(text, "Time: %2.i:%2.i", this->_LastValidTime.tm_hour, this->_LastValidTime.tm_min);
-    this->_DbgSerial->println(text);
+    if (this->_DbgSerial != nullptr)
+    {
+        sprintf(text, "Time: %2.i:%2.i", this->_LastValidTime.tm_hour, this->_LastValidTime.tm_min);
+        this->_DbgSerial->println(text);
 
-    sprintf(text, "Date: %4.i-%2.i-%2.i", this->_LastValidTime.tm_year, this->_LastValidTime.tm_mon, this->_LastValidTime.tm_mday);
-    this->_DbgSerial->println(text);
+        sprintf(text, "Date: %4.i-%2.i-%2.i", this->_LastValidTime.tm_year, this->_LastValidTime.tm_mon, this->_LastValidTime.tm_mday);
+        this->_DbgSerial->println(text);
 
-    sprintf(text, "Weekday: %i", this->_LastValidTime.tm_wday);
-    this->_DbgSerial->println(text);
+        sprintf(text, "Weekday: %i", this->_LastValidTime.tm_wday);
+        this->_DbgSerial->println(text);
 
-    sprintf(text, "Day of year: %i", this->_LastValidTime.tm_yday);
-    this->_DbgSerial->println(text);
+        sprintf(text, "Day of year: %i", this->_LastValidTime.tm_yday);
+        this->_DbgSerial->println(text);
 
-    sprintf(text, "Is DST: %i", this->_LastValidTime.tm_isdst);
-    this->_DbgSerial->println(text);
+        sprintf(text, "Is DST: %i", this->_LastValidTime.tm_isdst);
+        this->_DbgSerial->println(text);
+    }
 }
