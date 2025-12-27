@@ -54,7 +54,7 @@ class DCF77
     void     AddBit(bool bit);
     uint16_t DayOfYear(tm *t);
     void     DecodeTime(void);
-    void     InvalidateData(void);
+    void     ResetBuffer(void);
     bool     CheckParity(value_info_t Element);
     uint8_t  GetValueFromBuffer(value_info_t Element);
     // clang-format on

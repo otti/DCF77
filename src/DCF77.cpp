@@ -37,12 +37,13 @@ void DCF77::loop(void)
                 {
                     this->_DbgSerial->println("Start of new minute --> Decode");
                     this->DecodeTime();
+                    this->ResetBuffer(); // rx complete. reset buffer
                     this->DbgPrintTime();
                 }
                 else
                 {
                     this->_DbgSerial->println("Gap detected but not all bits have been received");
-                    this->InvalidateData();
+                    this->ResetBuffer();
                 }
             }
             else if ((u32PeriodeTime < 900) || (u32PeriodeTime > 1100)) // Periode time must be 1000 ms
@@ -50,7 +51,7 @@ void DCF77::loop(void)
                 this->_DbgSerial->print("Invalid periode time: ");
                 this->_DbgSerial->print(u32PeriodeTime);
                 this->_DbgSerial->println(" ms");
-                this->InvalidateData();
+                this->ResetBuffer();
             }
         }
         else // Falling edge
@@ -67,7 +68,7 @@ void DCF77::loop(void)
                 this->_DbgSerial->print("Invalid bit length: ");
                 this->_DbgSerial->print(u32HighTime);
                 this->_DbgSerial->println("ms");
-                this->InvalidateData();
+                this->ResetBuffer();
             }
         }
     }
@@ -85,10 +86,10 @@ bool DCF77::GetInputLevel(void)
     return digitalRead(this->_u8Pin);
 }
 
-void DCF77::InvalidateData(void)
+void DCF77::ResetBuffer(void)
 {
     this->_u8BufferPos = 0;
-    this->_DbgSerial->println("  - Invalidate data");
+    this->_DbgSerial->println("  - Reset data buffer");
 }
 
 void DCF77::AddBit(bool bit)
@@ -107,7 +108,7 @@ void DCF77::AddBit(bool bit)
     else
     {
         this->_DbgSerial->println("Buffer Overflow");
-        this->InvalidateData();
+        this->ResetBuffer();
     }
 }
 
