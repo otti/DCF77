@@ -204,6 +204,12 @@ void DCF77::DecodeTime(void)
     if (!this->CheckParity(ParityDate))
         return;
 
+    if( this->_abBuffer[0] != false ) // bit 0: Start of minute --> always 0
+        return;
+
+    if( this->_abBuffer[20] != true ) // Bit 20: Start of time protocol --> always 1
+        return;
+
     // Create C standard compatible time struct
     // clang-format off
     this->_LastValidTime.tm_hour  = this->GetValueFromBuffer(Hour);         // 0 ... 23
